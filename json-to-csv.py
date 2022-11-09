@@ -15,19 +15,15 @@ from smart_open import open
 
 class ReadJSON(beam.DoFn):
 
-
+# This pipeline reads JSON file in GCP bucket, convert to csv (pipe-seperated) format and write the new file in GCP
     def process(self, input_path):
         clear_data = []
-        # dict_obj = input_path.split('\n')
-        # for line in dict_obj:
-        #     json_line = json.loads(line)  
-        #     clear_data.append(','.join(str(json_line.values())))
-        #     # clear_data.append(','.join(line.values()))
+
         dict_obj = json.loads(input_path)
         # clear_data.append(dict_obj.keys())
         for val in dict_obj.values():
-            clear_data.append('\"'+(str(val))+'\"')
-        
+            clear_data.append('\"'+(str(val))+'\"') # Add quotes to escape any special character
+            # clear_data.append(str(val))
         yield clear_data
 
 
@@ -59,8 +55,10 @@ def run(argv=None, save_main_session=True):
     
     pipeline_options = PipelineOptions(pipeline_args)
     pipeline_options.view_as(SetupOptions).save_main_session=save_main_session
-    def json_csv_map(my_data):
-        str_data = ','.join(my_data)
+    def json_csv_map(my_data): # data is given in a list type
+        my_data = map(lambda s: s.replace("\n"," "), my_data) # remove any newline character
+        
+        str_data = '|'.join(my_data) # join each row together using pipe as seperator
         return str_data
         
     with beam.Pipeline(options=pipeline_options) as pipeline:
